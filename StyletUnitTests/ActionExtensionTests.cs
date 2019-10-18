@@ -1,18 +1,24 @@
-﻿using Moq;
+﻿#if NETFRAMEWORK
+
+using Moq;
 using NUnit.Framework;
 using Stylet.Xaml;
 using System;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Markup;
+using System.Xaml;
 
 namespace StyletUnitTests
 {
-    [TestFixture, RequiresSTA]
+    [TestFixture, Apartment(ApartmentState.STA)]
     public class ActionExtensionTests
     {
         private ActionExtension actionExtension;
         private Mock<IProvideValueTarget> provideValueTarget;
+        private Mock<IRootObjectProvider> rootObjectProvider;
         private Mock<IServiceProvider> serviceProvider;
 
         private class TestExtensions
@@ -20,14 +26,12 @@ namespace StyletUnitTests
             public static readonly RoutedEvent TestEvent = EventManager.RegisterRoutedEvent("Test", RoutingStrategy.Bubble, typeof(RoutedEventHandler), typeof(TestExtensions));
             public static void AddTestHandler(DependencyObject d, RoutedEventHandler handler)
             {
-                UIElement uie = d as UIElement;
-                if (uie != null)
+                if (d is UIElement uie)
                     uie.AddHandler(TestExtensions.TestEvent, handler);
             }
             public static void RemoveTestHandler(DependencyObject d, RoutedEventHandler handler)
             {
-                UIElement uie = d as UIElement;
-                if (uie != null)
+                if (d is UIElement uie)
                     uie.RemoveHandler(TestExtensions.TestEvent, handler);
             }
 
@@ -44,8 +48,11 @@ namespace StyletUnitTests
             this.provideValueTarget = new Mock<IProvideValueTarget>();
             this.provideValueTarget.Setup(x => x.TargetObject).Returns(new FrameworkElement());
 
+            this.rootObjectProvider = new Mock<IRootObjectProvider>();
+
             this.serviceProvider = new Mock<IServiceProvider>();
-            serviceProvider.Setup(x => x.GetService(typeof(IProvideValueTarget))).Returns(provideValueTarget.Object);
+            this.serviceProvider.Setup(x => x.GetService(typeof(IProvideValueTarget))).Returns(this.provideValueTarget.Object);
+            this.serviceProvider.Setup(x => x.GetService(typeof(IRootObjectProvider))).Returns(this.rootObjectProvider.Object);
         }
 
         [Test]
@@ -100,5 +107,26 @@ namespace StyletUnitTests
 
             Assert.Throws<ArgumentException>(() => this.actionExtension.ProvideValue(this.serviceProvider.Object));
         }
+
+        [Test]
+        public void ReturnsEventActionIfTargetIsCommandBinding()
+        {
+            this.provideValueTarget.Setup(x => x.TargetObject).Returns(new CommandBinding());
+            this.provideValueTarget.Setup(x => x.TargetProperty).Returns(typeof(CommandBinding).GetEvent("Executed"));
+            this.rootObjectProvider.Setup(x => x.RootObject).Returns(new DependencyObject());
+
+            Assert.IsInstanceOf<ExecutedRoutedEventHandler>(this.actionExtension.ProvideValue(this.serviceProvider.Object));
+        }
+
+        [Test]
+        public void ThrowsIfTargetIsCommandBindingAndRootObjectNotSet()
+        {
+            this.provideValueTarget.Setup(x => x.TargetObject).Returns(new CommandBinding());
+            this.provideValueTarget.Setup(x => x.TargetProperty).Returns(typeof(CommandBinding).GetEvent("Executed"));
+
+            Assert.Throws<InvalidOperationException>(() => this.actionExtension.ProvideValue(this.serviceProvider.Object));
+        }
     }
 }
+
+#endif

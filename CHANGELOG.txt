@@ -1,6 +1,29 @@
 Stylet Changelog
 ================
 
+v1.3.0
+------
+
+ - Add support for .NET Core
+ - Add Stylet.Templates NuGet package, containing a .NET Core template
+ - ViewManager is now singleton (#71)
+
+v1.2.0
+------
+
+ - Add support for CommandBinding in Actions (#50)
+ - Allow the owner of a dialog to be explicitly set (#36)
+ - Deprecate BindWeak (#38)
+ - Add BindAndInvoke method (#43)
+ - Add XmlnsPrefixAttribute (#57)
+ - Stylet.Start creates files as UTF-8 with BOM
+ - Improvements to the samples
+
+v1.1.22
+-------
+
+ - Allow custom MessageBox views to be used (#34)
+
 v1.1.21
 -------
 

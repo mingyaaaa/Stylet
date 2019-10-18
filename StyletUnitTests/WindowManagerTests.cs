@@ -1,15 +1,18 @@
-﻿using Moq;
+﻿#if NETFRAMEWORK
+
+using Moq;
 using NUnit.Framework;
 using Stylet;
 using System;
 using System.ComponentModel;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Data;
 
 namespace StyletUnitTests
 {
-    [TestFixture, RequiresSTA]
+    [TestFixture, Apartment(ApartmentState.STA)]
     public class WindowManagerTests
     {
         public interface IMyScreen : IScreen, IDisposable
@@ -22,9 +25,9 @@ namespace StyletUnitTests
             public MyWindowManager(IViewManager viewManager, Func<IMessageBoxViewModel> messageBoxViewModelFactory, IWindowManagerConfig config)
                 : base(viewManager, messageBoxViewModelFactory, config) { }
 
-            public new Window CreateWindow(object viewModel, bool isDialog)
+            public Window CreateWindow(object viewModel, bool isDialog)
             {
-                return base.CreateWindow(viewModel, isDialog);
+                return base.CreateWindow(viewModel, isDialog, null);
             }
         }
 
@@ -33,7 +36,7 @@ namespace StyletUnitTests
             public WindowManagerWithoutCreateWindow(IViewManager viewManager, Func<IMessageBoxViewModel> messageBoxViewModelFactory, IWindowManagerConfig config)
                 : base(viewManager, messageBoxViewModelFactory, config) { }
 
-            protected override Window CreateWindow(object viewModel, bool isDialog)
+            protected override Window CreateWindow(object viewModel, bool isDialog, IViewAware ownerViewModel)
             {
                 throw new TestException(); // ABORT! ABORT!
             }
@@ -401,3 +404,5 @@ namespace StyletUnitTests
         }
     }
 }
+
+#endif
